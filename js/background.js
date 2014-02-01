@@ -1,4 +1,9 @@
 
+
+var options = {
+  disableGlobalHotkeys: false,
+};
+
 // Directory structure.
 var dirs = {
   js: 'js/',
@@ -11,12 +16,27 @@ var dependencies = [
   dirs.js + 'utils.js',
 ];
 
-var options = {
-  disableGlobalHotkeys: false,
+var handlers = {
+  getTabs: function (data, sender, sendResponse) {
+    chrome.tabs.query({}, sendResponse);
+  },
+
+  initTab: function (data, sender, sendResponse) {
+    initTab(sender.tab.id);
+  },
+
+  echo: function (data, sender, sendResponse) {
+    console.log('ECHO: ', data);
+    sendResponse(data);
+  },
 };
 
 function init () {
+  init_protocol();
   !options.disableGlobalHotkeys && init_global_hotkeys();
+  chrome.tabs.query({}, function (tabs) {
+    console.log(JSON.stringify(tabs, null, 2));
+  });
 }
 
 /**
@@ -38,18 +58,21 @@ function init_global_hotkeys () {
     if (info.status != "complete") { return; }
     syncLoading(deps, tabId);
   });
+}
 
+/**
+ * What protocol is supported. Define protocol actions in the handlers global object.
+ */
+function init_protocol () {
   // Message passing for requests.
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse();
     if (!sender.tab) { return; }
-    switch (request) {
-      case 'inti':
-        initTab(sender.tab.id);
-        break;
-      default:
-        console.warn('Unknown request type:', request, sender);
+    if (!(request.action in handlers)) {
+      console.warn('Unknown request type:', request, sender);
+      return;
     }
+    handlers[request.action].apply(request.data, sender, sendResponse);
   });
 }
 

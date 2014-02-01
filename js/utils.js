@@ -1,3 +1,4 @@
+
 /**
  * Shuffle an array. Does a much better distribution than using the .sort() method.
  * @return {Array}
@@ -43,6 +44,73 @@ String.prototype.fuzzySearch = function (str, case_insensitive) {
   }
   return j == str.length ? result : null;
 };
+
+/**
+ * Object string formatting.
+ * Example: "I {verb} yolo {adjective}".format({verb:'love', adjective:'mofo'})
+ *    -> "I love yolo mofo";
+ * @param  {Object} obj
+ * @return {String}
+ */
+String.prototype.format = function (obj) {
+  var result = this;
+  for (var key in obj) {
+    result = result.replace(new RegExp('{' + key + '}', 'g'), obj[key]);
+  }
+  return result;
+}
+
+/**
+ * Returns the score of a fuzzy search using String.prototype.fuzzySearch();
+ * A smaller score means a better match.
+ * Returns Infinity if no match was found (aka if object is null)
+ *
+ * @param  {Object} obj
+ * @return {Number}
+ */
+function fuzzyScore (obj) {
+  if (obj === null) { return Infinity; }
+  var score = 0;
+  for (var pos in obj) {
+    var len = obj[pos].length;
+    score += (pos * len + ((len - 1) * len / 2));
+  }
+  return score;
+}
+
+/**
+ * Returns all the components of an URI.
+ *
+ * Example: parseURI("http://example.com:3000/pathname/?search=test#hash")
+ * will return:
+ *
+ * {  protocol: "http:",
+ *    hostname: "example.com",
+ *    port: "3000",
+ *    pathname: "/pathname/",
+ *    search: "?search=test",
+ *    hash: "#hash",
+ *    host: "example.com:3000",
+ * }
+ *
+ * @param  {String} str
+ * @return {Object}
+ */
+function parseURI (str) {
+
+  var parser = document.createElement('a');
+  parser.href = str;
+
+  var result = {};
+  var keys = ['protocol', 'hostname', 'port', 'pathname', 'search', 'hash', 'host'];
+  keys.forEach(function (key) { result[key] = parser[key]; });
+
+  ['host', 'hostname'].forEach(function (key) {
+    result[key] = result[key].replace(/^www\./, '');
+  });
+
+  return result;
+}
 
 /**
  * localStorage enhancer. Auto JSON.stringify and JSON.encodes all the elements.
@@ -104,15 +172,6 @@ var ls = {
 };
 
 /**
- * Create a new jQuery element of specified type
- * @param {string} type
- * @return {jQuery}
- */
-function jqElement (type) {
-  return $(document.createElement(type));
-}
-
-/**
  * Converts an array-like object to an array.
  * Mainly used for converting arguments to actual arrays.
  * @param  {Object|Array} arr
@@ -120,6 +179,19 @@ function jqElement (type) {
  */
 function cloneArray (arr) {
   return Array.prototype.slice.call(arr);
+}
+
+/**
+ * Clones one level of an object.
+ * @param  {Object} obj
+ * @return {Object}
+ */
+function cloneObject (obj) {
+  var result = {};
+  for (var key in obj) {
+    result[key] = obj[key];
+  }
+  return result;
 }
 
 var KEYS = {
