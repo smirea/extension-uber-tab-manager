@@ -1,17 +1,17 @@
 
 (function () {
-  if (window.jfc_init) { return; }
+  if (window.hotkeys_bind) { return; }
 
-  var hotkey = 78; // N
+  var hotkey = 13; // ENTER
   var excludeTags = 'select input textarea'.split(' ');
 
   document.addEventListener('keydown', oneShotHotkeys);
 
-  window.jfc_init = true;
-  window.jfc_unbind = function () {
+  window.hotkeys_bind = true;
+  window.hotkeys_unbind = function () {
     document.removeEventListener('keydown', oneShotHotkeys);
-    delete window.jfc_init;
-    delete window.jfc_unbind;
+    delete window.hotkeys_bind;
+    delete window.hotkeys_unbind;
   };
 
   function oneShotHotkeys (event) {
@@ -27,8 +27,8 @@
       p = p.parentNode;
     }
 
-    window.jfc_unbind();
-    sendMessage('send-card');
+    window.hotkeys_unbind();
+    sendMessage('hotkey_inti');
   }
 
   function sendMessage (data, callback) {
