@@ -170,38 +170,6 @@ function cloneArray (arr) {
   return Array.prototype.slice.call(arr);
 }
 
-/**
- * Sequencially load the files.
- * @param  {Object}   files
- * @param  {Number}   tab
- * @param  {Number}   index = 0
- * @param  {Function} callback
- */
-function syncLoading (files, tab, index, callback) {
-  tab = tab || null;
-  index = index || 0;
-  callback = callback || function _emptyCallback () {};
-
-  var fileObject = typeof files[index] === 'object' ? files[index]
-                                                      : { file: files[index] };
-  var extension = fileObject.file.slice(fileObject.file.lastIndexOf('.')+1);
-  var loadFunction = extension === 'js' ? 'executeScript' : 'insertCSS';
-
-  chrome.tabs[loadFunction](
-    tab,
-    fileObject,
-    (function _setupNextCallback (newFile, newIndex) {
-      return function _callNextSyncLoading () {
-        if (index + 1 < files.length) {
-          syncLoading(files, tab, newIndex, callback);
-        } else {
-          callback(files);
-        }
-      };
-    }(fileObject, index+1))
-  );
-}
-
 var KEYS = {
   CANCEL: 3,
   HELP: 6,
