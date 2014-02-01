@@ -1,0 +1,6 @@
+{
+  "name": "uber-tab-manager",
+  "dependencies": {
+    "absurd": "https://raw.github.com/krasimir/absurd/master/client-side/build/absurd.min.js"
+  }
+}
