@@ -28,7 +28,7 @@
     }
 
     window.hotkeys_unbind();
-    sendMessage('hotkey_init');
+    sendMessage('init');
   }
 
   function sendMessage (data, callback) {
