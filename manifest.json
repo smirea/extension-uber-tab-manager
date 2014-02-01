@@ -1,0 +1,18 @@
+{
+  "name": "Uber Tab Manager",
+  "description": "Manages a lot of tabs like a piece of cake.",
+  "manifest_version": 2,
+  "background": {
+    "scripts": ["js/utils.js", "js/background.js"]
+  },
+  "icons": {
+    "128": "images/logo-128.png"
+  },
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "<all_urls>",
+   ],
+  "version": "0.1"
+}
