@@ -1,39 +1,61 @@
 
-var windows = null;
-var tabs = null;
+var windows;
 
+var layout = {
+  container: null,
+  search: null,
+  tabs: null,
+};
+
+
+/**
+ * Magic starts here.
+ */
 function init () {
-  $.getJSON('dummy-tabs.json', function (result) {
-    // Generate the windows and add the .window property to each tab.
-    windows = {};
-    var windowNumber = {};
-    var counter = 0;
-    result.forEach(function (tab) {
-      if (!(tab.windowId in windows)) {
-        windows[tab.windowId] = [];
-        windowNumber[tab.windowId] = counter++;
-      }
-      tab.window = windowNumber[tab.windowId];
-      tab.url = '{hostname}{pathname}'.format(parseURI(tab.url));
-      windows[tab.windowId].push(tab);
-    });
-
-    tabs = result.map(function (t) { return new Tab(t); });
-
-    set_result(tabs);
-    init_search();
-
-    // testing stuff
-    $('pre').last().html(JSON.stringify(tabs, null, 2));
+  refresh(function () {
+    init_layout();
+    set_result(windows);
   });
+
+  // attach_event('show', document, 'keydown', function (event) {
+  //   if (!check_hotkey('ctrl+U', event)) return;
+
+  // });
 }
 
+/**
+ * Creates the DOM Structure, appends it to the DOM and then attaches the search events.
+ */
+function init_layout () {
+  if (layout.container) {
+    layout.container.parentNode.removeChild(layout.container);
+  }
+
+  layout.container = document.createElement('div');
+  layout.container.setAttribute('id', 'uberTabManager');
+  layout.container.innerHTML = '' +
+    '<div id="utm-searchContainer">' +
+      '<input type="text" id="utm-search" autofocus />' +
+    '</div>' +
+    '<ul id="utm-tabs"></ul>';
+  layout.search = layout.container.querySelector('#utm-search');
+  layout.tabs =  layout.container.querySelector('#utm-tabs');
+
+  document.documentElement.appendChild(layout.container);
+  init_search();
+}
+
+/**
+ * Adds the events for searching.
+ */
 function init_search () {
-  attach_event('search', document.getElementById('utm-search'), 'keyup', function (event) {
+  attach_event('search', layout.search, 'keyup', function (event) {
     var preventEvent = true;
 
     switch (event.keyCode) {
-      case KEYS.ENTER: eval_query(this.value); break;
+      case KEYS.ENTER:
+        update_windows(eval_query(this.value));
+        break;
       default:
         preventEvent = false;
     }
@@ -46,12 +68,22 @@ function init_search () {
 }
 
 /**
+ * Sends the tab list to the background page to be executed.
+ * @param  {TabList} tabList [description]
+ */
+function update_windows (tabList) {
+  sendMessage('updateWindows', tabList, function (tabList) {
+    console.log(tabList);
+  });
+}
+
+/**
  * Evaluates the query and calls each script, passing its result onto the next.
  * @param  {String} string
  */
 function eval_query (string) {
   var arr = string.split('|').map(function (s) { return s.trim().replace(/\s\s+/g, ' '); });
-  var result = cloneTabs(tabs);
+  var result = clone_windows(windows);
 
   arr.forEach(function (str) {
     var args = str.split(' ');
@@ -68,6 +100,7 @@ function eval_query (string) {
   });
 
   set_result(result);
+  return result;
 }
 
 /**
@@ -95,21 +128,65 @@ function check_hotkey (str, event) {
 
 /**
  * Updates the DOM with the given tab list.
- * @param {Array} tabList
+ * @param {WindowList} windowList
  */
-function set_result (tabList) {
-  document.getElementById('utm-tabs').innerHTML = tabList.map(function (tab) {
-    return tab.render();
+function set_result (windowList) {
+  console.log(windowList.map(function (w) { return w.tabs; }));
+  layout.tabs.innerHTML = windowList.map(function (win) {
+    return win.tabs.map(function (tab) {
+      return tab.render();
+    }).join('');
   }).join('');
+
+  layout.container.style.display = 'block';
+}
+
+/**
+ * Clones a list of windows
+ * @param  {WindowList} windowList
+ * @return {WindowList}
+ */
+function clone_windows (windowList) {
+  return windowList.map(function (win) {
+    var result = {};
+    for (var key in win) {
+      if (key == 'tabs') {
+        result[key] = clone_tabs(win[key]);
+        continue;
+      }
+      result[key] = win[key];
+    }
+    return result;
+  });
 }
 
 /**
  * Returns a copy of the Tab array.
- * @param  {Array} tabList
+ * @param  {Array} TabList
  * @return {Array}
  */
-function cloneTabs (tabList) {
+function clone_tabs (tabList) {
   return tabList.map(function (tab) { return tab.clone(); });
+}
+
+/**
+ * Re-fetches all data from the background page.
+ * @param  {Function} callback
+ */
+function refresh (callback) {
+  sendMessage('getWindows', null, function (result) {
+    windows = result;
+
+    //TODO: handle non-normal windows
+    windows = windows.filter(function (win) { return win.type === 'normal'; });
+
+    windows.forEach(function (win) {
+      win.tabs = win.tabs.map(function (tab) { return new Tab(tab); });
+      modifiers.position(win.tabs);
+    });
+
+    (callback || function () {})();
+  });
 }
 
 // All events attached with attach_event() will be stored here fore cleanup purposes.
@@ -155,4 +232,4 @@ function sendMessage (action, data, callback) {
 /**
  * init()
  */
- $(init);
+init();

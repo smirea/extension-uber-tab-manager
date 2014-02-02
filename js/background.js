@@ -1,7 +1,7 @@
 
 
 var options = {
-  disableGlobalHotkeys: false,
+  disableGlobalHotkeys: true,
 };
 
 // Directory structure.
@@ -13,29 +13,137 @@ var dirs = {
 
 // Content script dependencies.
 var dependencies = [
-  dirs.js + 'utils.js',
+  'bower/absurd/index.js',
+  'js/absurd-plugins.js',
+  'css/theme.css.js',
+  'css/contentscript.css.js',
+  'js/utils.js',
+  'js/Tab.js',
+  'js/scripts.js',
+  'js/contentscript.js',
 ];
 
+/**
+ * These are all the actions that can be used in the protocol.
+ *
+ * NOTE: Handlers that use sendResponse async should return true;
+ *
+ * Most handlers will have the following structure:
+ * @param  {Mixed} data
+ * @param  {Object} sender
+ * @param  {Object} sendResponse
+ * @return {Boolean}
+ */
 var handlers = {
-  getTabs: function (data, sender, sendResponse) {
-    chrome.tabs.query({}, sendResponse);
+  /**
+   * Performs modifications on the tabs.
+   * @param  {windowList} data
+   */
+  updateWindows: function (data, sender, sendResponse) {
+    var callbacks = [];
+
+    data.forEach(function (win) {
+      callbacks = callbacks.concat(win.tabs.map(function (tab) {
+        return function (callback) {
+          chrome.tabs.move(
+            tab.id,
+            {windowId:tab.windowId, index:tab.modifiers.position},
+            callback.bind(null, null)
+          );
+        };
+      }));
+    });
+
+    async.series(callbacks, function (err, result) {
+      if (err) { console.warn(err); }
+      getWindows(data, sendResponse);
+    });
+
+    return true;
   },
 
+  getWindows: function (data, sender, sendResponse) {
+    getWindows(data, sendResponse);
+    return true;
+  },
+
+  /**
+   * Performs a chrome.tabs.query() and returns the enhanced result of tabs.
+   */
+  query: function (data, sender, sendResponse) {
+    getWindows(data, sendResponse);
+    return true;
+  },
+
+  /**
+   * Loads all the dependencies in the tab.
+   */
   initTab: function (data, sender, sendResponse) {
-    initTab(sender.tab.id);
+    initTab(sender.tab.id, sendResponse);
+    return true;
   },
 
+  /**
+   * Basic echo for testing
+   */
   echo: function (data, sender, sendResponse) {
     console.log('ECHO: ', data);
     sendResponse(data);
   },
 };
 
+/**
+ * Adds extra data to the Tab objects.
+ * Side-effect: it also changes the objects, it does not return a copy.
+ *
+ * @param  {Array} tabs
+ * @return {Array}
+ */
+function enhanceWindows (windows) {
+  windows.forEach(function (win, winIndex) {
+    win.tabs.forEach(function (tab) {
+      tab.windowNumber = winIndex;
+      tab.url = '{hostname}{pathname}'.format(parseURI(tab.url));
+    });
+  });
+
+  return windows;
+}
+
+/**
+ * Gets all the windows async, enhances their them, and passes them to the callback.
+ * @param  {Object} data Used for filtering in chrome.windows.getAll().
+ * @param  {Function} callback
+ */
+function getWindows (data, callback) {
+  chrome.windows.getAll(data || {populate:true}, function (windows) {
+    enhanceWindows(windows);
+    callback(windows);
+  });
+}
+
+/**
+ * Where all the magic happens.
+ */
 function init () {
   init_protocol();
+
+  just_for_testing();
+
   !options.disableGlobalHotkeys && init_global_hotkeys();
-  chrome.tabs.query({}, function (tabs) {
-    console.log(JSON.stringify(tabs, null, 2));
+  console.info('[INIT] done');
+}
+
+function just_for_testing () {
+  // chrome.tabs.query({}, function (tabs) {
+  //   for (var i=0; i<tabs.length; ++i) {
+  //     initTab(tabs[i].id);
+  //   }
+  // });
+
+  chrome.tabs.onUpdated.addListener(function (tabId, info) {
+    if (info.status != "complete") { return; }
+    initTab(tabId);
   });
 }
 
@@ -66,13 +174,17 @@ function init_global_hotkeys () {
 function init_protocol () {
   // Message passing for requests.
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    sendResponse();
-    if (!sender.tab) { return; }
+    if (!sender.tab) {
+      console.warn('No sender.tab', sender);
+      return; sendResponse(null);
+    }
+
     if (!(request.action in handlers)) {
       console.warn('Unknown request type:', request, sender);
-      return;
+      sendResponse(null);
     }
-    handlers[request.action].apply(request.data, sender, sendResponse);
+
+    return handlers[request.action](request.data, sender, sendResponse);
   });
 }
 

@@ -3,7 +3,7 @@
   "description": "Manages a lot of tabs like a piece of cake.",
   "manifest_version": 2,
   "background": {
-    "scripts": ["js/utils.js", "js/background.js"]
+    "scripts": ["bower/async/lib/async.js", "js/utils.js", "js/background.js"]
   },
   "icons": {
 

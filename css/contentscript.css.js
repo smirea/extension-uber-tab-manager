@@ -3,14 +3,19 @@ absurd.addStyle(function (api) {
 
   css['#uberTabManager *'] = {
     xBoxSizing: 'border-box',
-    fontFamily: '"Trebuchet MS", Helvetica, sans-serif',
-    fontSize: '13pt',
   };
 
   css['#uberTabManager'] = {
-    width: '600px',
+    dispaly: 'none',
+    position: 'fixed',
+    zIndex: 10000000,
+    top: '10px',
+    left: '10px',
     border: api.theme.borderStyle,
-    fontSize: '14px',
+    backgroundColor: '#fff',
+    width: '600px',
+    fontFamily: '"Trebuchet MS", Helvetica, sans-serif',
+    fontSize: '13pt',
   };
 
   css['#utm-searchContainer'] = {
@@ -25,6 +30,7 @@ absurd.addStyle(function (api) {
     borderBottom: api.theme.borderStyle,
     margin: 0,
     padding: '10px 15px',
+    fontSize: '14pt',
 
     ':focus': {
       outline: 'none',
@@ -34,7 +40,7 @@ absurd.addStyle(function (api) {
 
   css['#utm-tabs'] = {
     listStyleType: 'none',
-    maxHeight: '690px',
+    maxHeight: '435px',
     overflow: 'auto',
     margin: 0,
     padding: 0,
@@ -66,6 +72,15 @@ absurd.addStyle(function (api) {
       '.utm-url': {
         fontSize: '0.8em',
         color: '#828696',
+      },
+
+      '.utm-modifier': {
+        fontSize: '0.7em',
+        float: 'right',
+
+        'b': {
+          color: 'red',
+        }
       },
     },
 

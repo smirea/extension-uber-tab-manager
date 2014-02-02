@@ -8,11 +8,17 @@ var Tab = (function () {
     for (var key in data) {
       this[key] = data[key];
     }
+
+    this.modifiers = cloneObject(data.modifiers || Tab.MODIFIERS, true);
   }
+
+  Tab.MODIFIERS = {
+    position: null,
+  };
 
   Tab.prototype = {
 
-    modifiers: {},
+    modifiers: null,
 
     /**
      * Returns a new instance of the same tab.
@@ -39,17 +45,25 @@ var Tab = (function () {
       return new Tab(data);
     },
 
+    /**
+     * Returns a string representation of itself
+     * @return {String}
+     */
     render: function () {
       return ('' +
         '<li class="utm-tab" tabid="{id}">' +
-          '<span class="utm-window-marker utm-window-{window}">&nbsp;</span>' +
+          (Object.keys(this.modifiers).map(function (m) {
+            return '<div class="utm-modifier"><b>{0}:</b> {1}</div>'.
+                    format([m, this.modifiers[m]]);
+          }.bind(this)).join('')) +
+          '<span class="utm-window-marker utm-window-{windowNumber}">&nbsp;</span>' +
           '<img class="utm-favicon" alt="[!]" src="{favIconUrl}" />' +
           '<div class="utm-title">{title}</div>' +
           '<div class="utm-url">{url}</div>' +
         '</li>').
         format({
           id: this.id,
-          window: this.window,
+          windowNumber: this.windowNumber,
           favIconUrl: this.favIconUrl,
           title: maxLength(this.title, 50),
           url: this.url,

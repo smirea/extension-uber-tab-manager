@@ -11,4 +11,22 @@
 
   absurd.register('theme', theme);
 
+  absurd.addStyle(function (api) {
+    var css = {};
+
+    css['.clearfix'] = {
+      '*zoom': 1,
+      '&:before, &:after': {
+        display: 'table',
+        content: '',
+        lineHeight: 0,
+      },
+      '&:after': {
+        clear: 'both',
+      },
+    };
+
+    return css;
+  });
+
 })();

@@ -3,10 +3,15 @@
  * Shuffle an array. Does a much better distribution than using the .sort() method.
  * @return {Array}
  */
-Array.prototype.shuffle = function () {
-  for(var j, x, i = this.length; i; j = Math.floor(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
-  return this;
-};
+Object.defineProperty(Array.prototype, "shuffle", {
+  enumerable: false,
+  configurable: true,
+  writable: true,
+  value: function () {
+    for(var j, x, i = this.length; i; j = Math.floor(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
+    return this;
+  }
+});
 
 /**
  * Perform fuzzy searching on the string.
@@ -55,7 +60,7 @@ String.prototype.fuzzySearch = function (str, case_insensitive) {
 String.prototype.format = function (obj) {
   var result = this;
   for (var key in obj) {
-    result = result.replace(new RegExp('{' + key + '}', 'g'), obj[key]);
+    result = result.replace(new RegExp('\\{' + key + '\\}', 'g'), obj[key]);
   }
   return result;
 }
@@ -182,16 +187,40 @@ function cloneArray (arr) {
 }
 
 /**
- * Clones one level of an object.
+ * Does a deep copy of the object.
  * @param  {Object} obj
  * @return {Object}
  */
 function cloneObject (obj) {
-  var result = {};
-  for (var key in obj) {
-    result[key] = obj[key];
+  // Handle the 3 simple types, and null or undefined
+  if (null == obj || "object" != typeof obj) return obj;
+
+  // Handle Date
+  if (obj instanceof Date) {
+    var copy = new Date();
+    copy.setTime(obj.getTime());
+    return copy;
   }
-  return result;
+
+  // Handle Array
+  if (obj instanceof Array) {
+    var copy = [];
+    for (var i = 0, len = obj.length; i < len; i++) {
+      copy[i] = cloneObject(obj[i]);
+    }
+    return copy;
+  }
+
+  // Handle Object
+  if (obj instanceof Object) {
+    var copy = {};
+    for (var attr in obj) {
+      if (obj.hasOwnProperty(attr)) copy[attr] = cloneObject(obj[attr]);
+    }
+    return copy;
+  }
+
+  throw new Error("Unable to copy obj! Its type isn't supported.");
 }
 
 var KEYS = {
